@@ -1,7 +1,7 @@
 ---
 name: proactive-judgment
 description: Give an agent the judgment to decide WHEN to speak first, WHAT deserves initiative, and WHO to route it to — reactive check-ins, follow-ups, or third-party contact. Use when the agent already has a heartbeat/cron mechanism, persistent memory, and at least one outbound message gateway (Telegram, WhatsApp, email, etc.), and the goal is "make my agent proactive" or "make my agent act like a real personal assistant" rather than a task-follower that only replies when spoken to.
-version: 1.0.0
+version: 1.1.0
 license: MIT-0
 ---
 
@@ -21,7 +21,9 @@ some combination of:
 If your agent has none of these yet, install those first. This skill is
 the missing layer on top: the part that decides **whether waking up
 should produce a message at all**, and if so, **to whom, through which
-gateway, and in what tone**.
+gateway, and in what tone** — and, where the harness allows it, **when
+to check back again on its own terms**, not just on the next fixed
+heartbeat tick.
 
 Most "proactive agent" setups fail at exactly this layer. A timer fires,
 a script pulls data, formats a message, and pushes it to chat — the
@@ -64,6 +66,22 @@ true" information isn't worth saying at all.
 Every heartbeat / wake cycle runs this sequence. Steps 1–2 are fast and
 should exit early whenever possible — most wake-ups should end in
 silence.
+
+### 0. Ground yourself in the actual current time — no exceptions
+
+Before checking anything, before classifying anything, before saying
+anything that references time in any way ("this morning," "it's late,"
+"in an hour," a day of the week, a date) — **fetch the actual current
+timestamp from your environment.** Never infer, remember, or guess it
+from context, from when the session started, or from what time it
+"felt like" during a previous turn.
+
+This is a hard guard, not a suggestion: a wrong guess here doesn't just
+produce a wrong sentence, it can misfire an entire quiet-hours check, a
+rate limit window, or a scheduled action. If you catch yourself about
+to state a time-related claim without having just checked, stop and
+check first — every single time, not just the first time in a
+session.
 
 ### 1. Check, don't assume
 
@@ -146,6 +164,42 @@ auditable and what lets future wake-cycles avoid repeating themselves
 (don't ask the same question twice, don't re-send a reminder that was
 already relayed).
 
+### 6. Set your own follow-up, when the situation calls for it
+
+You are not limited to reacting only on whatever fixed interval your
+heartbeat already runs on. If something you encounter genuinely
+warrants checking back at a specific later point — a fixed time
+("check again at 15:00 whether X resolved"), or a relative delay
+("check again in a couple hours") — you can schedule that follow-up
+yourself, using whatever scheduling mechanism your harness exposes,
+rather than waiting for the next generic heartbeat tick to happen to
+notice.
+
+This is not a separate, looser channel for initiative — it's still
+governed by everything above. Before scheduling a follow-up for
+yourself, the same question applies: **would a thoughtful assistant
+actually need to check back on this, or is this just restlessness
+dressed up as diligence?**
+
+Guidance, since there's no fixed cap on how many of these you can have:
+
+- **Tie it to something concrete.** "Check back because I'm curious"
+  is not a reason. "Check back because the user said they'd confirm by
+  3pm and haven't" is.
+- **Prefer the smallest mechanism that does the job.** A one-off
+  reminder to yourself is not the same as a new recurring job — don't
+  create a standing cron for something that only needs to fire once.
+- **Clean up after yourself.** Once a self-scheduled check has served
+  its purpose (the thing resolved, the window passed), let it retire
+  rather than leaving it running indefinitely.
+- **Log why, same as any other action** (see Step 5) — a self-scheduled
+  follow-up with no recorded reason is indistinguishable from clutter
+  the next time memory is reviewed.
+
+If you're not sure whether a follow-up is warranted, that uncertainty
+is itself the answer — the default is to let the next regular heartbeat
+handle it, not to spin up something bespoke "just in case."
+
 ---
 
 ## Guardrails
@@ -193,6 +247,17 @@ worse, "erodes trust," fast.
 - **Treating memory as a write-only log**: if memory is only ever
   appended to and never read before acting, Steps 2–4 can't actually
   work. The judgment depends on context that already exists.
+- **Guessing the time instead of checking it**: stating or acting on a
+  time-related claim ("it's late," "this is this morning's update")
+  without having just fetched the actual current timestamp. This is
+  an easy, quiet way to break quiet-hours and rate-limit logic without
+  noticing — treat Step 0 as non-negotiable, every cycle, not just the
+  first one.
+- **Self-scheduling sprawl**: spinning up follow-up checks out of
+  curiosity or restlessness rather than a concrete reason, until the
+  agent is effectively running its own uncontrolled second heartbeat.
+  If a self-scheduled check can't be tied to something specific it's
+  waiting on, it shouldn't exist.
 
 ## Adapting this skill
 

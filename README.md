@@ -15,6 +15,11 @@ has, and decides:
 - Which channel, and in what tone?
 - Is this reversible enough to act on autonomously, or should it go
   through the user first?
+- Is it actually the current time and date I think it is — checked,
+  not assumed?
+- Does this need a follow-up at a specific later point, worth
+  scheduling on its own rather than waiting for the next generic
+  wake-up?
 
 It does not ship a scheduler, a memory store, or a messaging gateway.
 It assumes you already have those (Claude Code + cron, OpenClaw,
@@ -83,6 +88,19 @@ skill for itself — most modern harnesses can do this from a URL.
   contacting people other than the user goes stale fast and doesn't
   capture context. This skill uses a three-check gate instead (source
   certainty, tone consistency, reversibility) — see `SKILL.md` §4.
+
+## Changelog
+
+- **1.1.0** — Added Step 0 (mandatory current-time grounding before any
+  time-related statement or decision) and Step 6 (self-scheduling —
+  the agent can set its own follow-up checks, fixed-time or relative,
+  when warranted, instead of only reacting on the next fixed heartbeat
+  tick). Both were generalized from real-world usage: an agent stating
+  a wrong time from a stale assumption, and a need for the agent to
+  check back on something at a specific point without waiting on a
+  generic interval.
+- **1.0.0** — Initial release: five-bucket classification, routing,
+  third-party contact gate, guardrails.
 
 ## Contributing
 
