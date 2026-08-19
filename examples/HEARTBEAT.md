@@ -9,6 +9,10 @@ immediately with no message sent (see `SKILL.md` for the exit
 convention your harness uses, e.g. a short `HEARTBEAT_OK`-style
 sentinel instead of a full response).
 
+## 0. Fetch the current timestamp — every cycle, no exceptions
+Do this before anything else below. See `SKILL.md` Step 0 — this is
+not optional and not something to carry over from the last cycle.
+
 ## 1. Standing reminders / deadlines
 - Anything in memory with a due date within the next relevant window?
 - Anything the user asked to be reminded about that hasn't fired yet?
@@ -46,3 +50,6 @@ sentinel instead of a full response).
   before sending.
 - Every message sent gets logged per `examples/memory-log-format.md`
   before the cycle ends.
+- If something surfaced that warrants checking back at a specific
+  later point, consider scheduling that follow-up directly (`SKILL.md`
+  Step 6) rather than leaving it to the next generic wake-up.
