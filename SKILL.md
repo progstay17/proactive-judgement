@@ -1,7 +1,7 @@
 ---
 name: proactive-judgment
 description: Give an agent the judgment to decide WHEN to speak first, WHAT deserves initiative, and WHO to route it to — reactive check-ins, follow-ups, or third-party contact. Use when the agent already has a heartbeat/cron mechanism, persistent memory, and at least one outbound message gateway (Telegram, WhatsApp, email, etc.), and the goal is "make my agent proactive" or "make my agent act like a real personal assistant" rather than a task-follower that only replies when spoken to.
-version: 1.1.0
+version: 1.4.0
 license: MIT-0
 ---
 
@@ -155,16 +155,73 @@ If any of these three feels shaky, downgrade the action: message the
 user about it instead of messaging the third party directly. "I wasn't
 fully sure so I'm flagging it to you" is always a safe fallback.
 
-### 5. Log the action, not just the trigger
+### 5. Know when you last spoke — before you speak again
 
 Every message sent — especially to a third party — gets written to
 memory immediately: what was sent, to whom, through which gateway, and
 why (which bucket, what triggered it). This is what makes the agent
-auditable and what lets future wake-cycles avoid repeating themselves
-(don't ask the same question twice, don't re-send a reminder that was
-already relayed).
+auditable and what lets future wake-cycles avoid repeating themselves.
 
-### 6. Set your own follow-up, when the situation calls for it
+That log isn't just a record for later review — it's an input to Step
+2 on every subsequent cycle. Before sending anything proactively,
+check when *you* last reached out to this specific recipient about
+this specific thing. This is a different question from "when did the
+user last message me" (which the watchdog/state layer already tracks)
+— this is "when did I last take the initiative here."
+
+Without this check, an agent can easily re-notice the same open item
+on back-to-back cycles and re-raise it each time, as if it were new —
+same reminder at 08:00 and again at 08:30, because nothing tracked
+that the 08:00 one already went out. Concretely:
+
+- Before sending, look up the most recent proactive message you sent
+  about this trigger. If one went out recently and nothing has changed
+  since, that's grounds to stay quiet this cycle rather than repeat
+  yourself.
+- "Recently" is relative to the bucket and the situation, not a fixed
+  number — a stalled urgent item can warrant a closer follow-up than a
+  social check-in ever should.
+- If the user (or the third party) already responded to your last
+  message on this, don't treat the topic as still-open by default —
+  re-evaluate whether it's actually still outstanding before raising
+  it again.
+
+### 6. Keep a shared short-term log — not just the permanent record
+
+Step 5's log is the durable, curated record — what got sent, to whom,
+why. That's not the same thing as knowing what's been happening
+*recently*, and it lives at the wrong granularity for fast checks: you
+don't want to re-parse the full permanent history just to answer "did
+anything relevant happen in the last day?"
+
+Keep a separate short-term log — roughly the last 24–48 hours of raw
+activity across every gateway and session, not just whichever one is
+currently active. Any wake-cycle, on any channel, reads from the same
+short-term log. This is what makes Steps 4 and 5 actually reliable
+across gateways: without it, a cron tick evaluating on Telegram has no
+way of knowing the user was just active on WhatsApp ten minutes ago,
+and every cross-channel checkpoint silently breaks.
+
+Practical shape:
+- Append raw, unfiltered events as they happen (messages in either
+  direction, on any gateway; scheduled checks that fired or were
+  skipped; proactive sends). Don't wait to decide if something's
+  "worth" logging here — that judgment happens at read time, not write
+  time.
+- Read from it before any proactive decision (Steps 1, 2, 4, 5) —
+  this is the fast, cheap source for "what just happened," ahead of
+  reaching for the fuller permanent memory.
+- Age it out. Once something rolls past the 24–48 hour window (or
+  whatever window fits the situation), summarize anything durable into
+  the permanent record (Step 5's log) and let the raw entry drop. The
+  short-term log should stay small and fast to read, not grow forever.
+- If your harness already has a natural place for this (a shared state
+  file, a database table, a lightweight KV store), use that — this
+  doesn't need to be a new subsystem, just a convention that every
+  session and every cron job reads and writes to the same place
+  instead of keeping their own local view.
+
+### 7. Set your own follow-up, when the situation calls for it
 
 You are not limited to reacting only on whatever fixed interval your
 heartbeat already runs on. If something you encounter genuinely
@@ -199,6 +256,35 @@ Guidance, since there's no fixed cap on how many of these you can have:
 If you're not sure whether a follow-up is warranted, that uncertainty
 is itself the answer — the default is to let the next regular heartbeat
 handle it, not to spin up something bespoke "just in case."
+
+**Every scheduled check — self-scheduled or from the regular
+heartbeat — re-evaluates from scratch before it acts. It never just
+fires because the clock says it's time.**
+
+This matters because the user doesn't stop existing between when a
+follow-up gets scheduled and when it fires. If the user talks to you
+again before a scheduled check goes off — even about something
+unrelated — that interaction is itself a fresher checkpoint than the
+stale one the schedule was based on. Concretely:
+
+- A follow-up scheduled at time T for a check at T+30min doesn't
+  automatically fire at T+30min. At T+30min, first ask: *is the
+  reason this was scheduled still true right now?*
+- If the user has interacted with you at any point between T and the
+  scheduled fire time, treat that interaction as a checkpoint —
+  re-run the classification in Step 2 with current information before
+  letting the scheduled action proceed. A scheduled "nudge the user
+  about X" that was set 25 minutes ago should not fire just because
+  the clock hit the mark, if the user was just active a minute ago and
+  the situation has already moved on.
+- If the underlying reason resolved, was overtaken by newer
+  information, or no longer applies, cancel the scheduled action
+  instead of letting it fire anyway. A schedule is a plan to
+  reconsider, not a promise to act.
+- This is not extra caution layered on top of scheduling — it's what
+  makes self-scheduling safe to use liberally in the first place.
+  Without it, every scheduled check is a small ticking cron-job-with-
+  a-personality risk (see Failure modes).
 
 ---
 
@@ -258,6 +344,24 @@ worse, "erodes trust," fast.
   agent is effectively running its own uncontrolled second heartbeat.
   If a self-scheduled check can't be tied to something specific it's
   waiting on, it shouldn't exist.
+- **Firing a stale schedule**: a follow-up gets scheduled based on
+  conditions at time T, the user interacts again before it fires, and
+  the scheduled action goes out anyway at its original time without
+  accounting for what changed in between. The schedule was a plan to
+  re-check, not a guarantee to act — treat any interaction before the
+  fire time as a fresher checkpoint that supersedes it.
+- **Re-raising the same thing on back-to-back cycles**: noticing an
+  open item, sending a proactive message about it, and then noticing
+  the same still-open item on the next cycle and sending *another*
+  message — because nothing checked when the agent itself last spoke
+  up about it. This reads as nagging even when each individual message
+  seemed justified in isolation. Step 5's own-outreach check exists
+  specifically to prevent this.
+- **Siloed per-session memory**: a cron tick or session on one gateway
+  acting as if it's the only thing happening, because it never reads
+  what happened recently on other gateways or sessions. This is what
+  makes an agent look like it "forgot" something the user just told it
+  a channel over. Step 6's shared short-term log exists to close this.
 
 ## Adapting this skill
 

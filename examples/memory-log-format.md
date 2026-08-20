@@ -52,3 +52,34 @@ Without a log like this, the agent has no way to know it already sent
 something, and the user has no way to review what the agent said on
 their behalf. Treat this log as required, not optional — `SKILL.md`
 Step 5 makes this explicit.
+
+---
+
+## The other layer: shared short-term log (Step 6)
+
+The log above is the durable, curated record — you write to it when
+something actually gets sent. That's a different thing from the
+short-term log in `SKILL.md` Step 6, which is a rolling, unfiltered
+window (roughly 24–48 hours) of *everything* that happened, across
+every gateway and session — not just the proactive sends. Its job is
+to answer "what just happened, anywhere" fast, before deciding whether
+to act.
+
+```
+timestamp:  2026-08-19T07:59:00+07:00
+gateway:    whatsapp
+direction:  inbound
+summary:    user sent an unrelated message — confirms user is active
+```
+
+```
+timestamp:  2026-08-19T08:00:00+07:00
+gateway:    telegram
+direction:  scheduled-check
+summary:    watchdog tick fired; skipped — user was active 1 min ago per short-term log
+```
+
+Keep entries here cheap to write and cheap to read — every wake cycle
+reads this before anything else, on any gateway. Once something rolls
+past the window, summarize anything that matters into the permanent
+log above and let the raw entry drop.

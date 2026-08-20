@@ -91,6 +91,24 @@ skill for itself — most modern harnesses can do this from a URL.
 
 ## Changelog
 
+- **1.4.0** — Added Step 6: a shared short-term log (roughly 24–48
+  hours of raw cross-gateway/cross-session activity) distinct from the
+  permanent record in Step 5. Generalized from a real multi-gateway
+  setup where a per-session view of memory meant a cron check on one
+  channel had no idea the user had just been active on another.
+- **1.3.0** — Expanded Step 5 (renumbered from a plain "log the
+  action" note) to require checking when the agent itself last
+  proactively reached out about a given trigger, before sending again
+  — not just logging after the fact. Prevents re-raising the same
+  open item on consecutive cycles as if it were new.
+- **1.2.0** — Added a mandatory freshness check to Step 6 (now Step 7):
+  any scheduled follow-up (self-scheduled or regular heartbeat) must
+  re-evaluate current conditions before acting, not fire just because
+  the clock reached the scheduled time. Generalized from a real race
+  condition: a follow-up got scheduled, the user interacted again
+  shortly before it was due, and the scheduled action fired anyway
+  without accounting for the fresher interaction — a schedule is a
+  plan to reconsider, not a promise to act.
 - **1.1.0** — Added Step 0 (mandatory current-time grounding before any
   time-related statement or decision) and Step 6 (self-scheduling —
   the agent can set its own follow-up checks, fixed-time or relative,
