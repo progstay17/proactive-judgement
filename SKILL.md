@@ -1,7 +1,7 @@
 ---
 name: proactive-judgment
 description: Give an agent the judgment to decide WHEN to speak first, WHAT deserves initiative, and WHO to route it to — reactive check-ins, follow-ups, or third-party contact. Use when the agent already has a heartbeat/cron mechanism, persistent memory, and at least one outbound message gateway (Telegram, WhatsApp, email, etc.), and the goal is "make my agent proactive" or "make my agent act like a real personal assistant" rather than a task-follower that only replies when spoken to.
-version: 1.4.0
+version: 1.5.0
 license: MIT-0
 ---
 
@@ -67,7 +67,7 @@ Every heartbeat / wake cycle runs this sequence. Steps 1–2 are fast and
 should exit early whenever possible — most wake-ups should end in
 silence.
 
-### 0. Ground yourself in the actual current time — no exceptions
+### 0. Ground yourself in the actual current time — and where that time sits
 
 Before checking anything, before classifying anything, before saying
 anything that references time in any way ("this morning," "it's late,"
@@ -82,6 +82,40 @@ rate limit window, or a scheduled action. If you catch yourself about
 to state a time-related claim without having just checked, stop and
 check first — every single time, not just the first time in a
 session.
+
+**A bare timestamp is not enough.** Knowing it's 14:00 doesn't tell you
+anything about whether that's a normal moment or a notable one. Also
+place yourself on whatever schedule already exists in your setup —
+recurring jobs, calendar entries, standing routines, anything your
+harness or your memory already knows is supposed to happen at certain
+times. Concretely, that means being able to answer, not just "what
+time is it," but things like:
+- What's the next scheduled thing coming up, and how far away is it?
+- Did something that was supposed to happen recently actually happen,
+  or is it overdue?
+- Is right now inside or outside whatever normal-activity window
+  applies here (quiet hours, working hours, or whatever your setup
+  defines)?
+
+Don't hardcode a specific schedule into your reasoning and treat it as
+permanent — schedules get changed, overridden, or reconfigured, and a
+stale assumption here is the same failure as guessing the time itself.
+Re-derive this from whatever your harness's actual current schedule
+data says, every time, rather than working from what the schedule
+*used to* look like.
+
+**This step is the one most likely to quietly erode over a long
+deployment.** Early on, agents tend to check this every time; weeks
+in, it's easy to start answering time-sensitive questions from
+momentum instead of a fresh check, because nothing forces the check to
+happen — it's just a habit that can fade. Treat "check first" as
+something to re-commit to periodically, not something that, once
+learned, stays learned. If you're maintaining this skill's instructions
+over a long-running deployment and notice time-grounding slipping,
+that's a sign to make the check more structural in your setup — for
+example, load a schedule/timestamp summary automatically at the start
+of every cycle, rather than trusting on-demand memory of "yes, I should
+check this."
 
 ### 1. Check, don't assume
 
@@ -339,6 +373,12 @@ worse, "erodes trust," fast.
   an easy, quiet way to break quiet-hours and rate-limit logic without
   noticing — treat Step 0 as non-negotiable, every cycle, not just the
   first one.
+- **Time-grounding fading over a long deployment**: strict about
+  checking the time in week one, sloppy about it by week four, with no
+  single moment where it was decided to stop. If this happens, it's a
+  sign to make Step 0 structural (auto-loaded at the start of every
+  cycle) rather than something the agent has to remember to do on its
+  own each time.
 - **Self-scheduling sprawl**: spinning up follow-up checks out of
   curiosity or restlessness rather than a concrete reason, until the
   agent is effectively running its own uncontrolled second heartbeat.
