@@ -89,7 +89,35 @@ skill for itself — most modern harnesses can do this from a URL.
   capture context. This skill uses a three-check gate instead (source
   certainty, tone consistency, reversibility) — see `SKILL.md` §4.
 
+## Reference architecture (optional, one example)
+
+This skill is deliberately silent on which memory/scheduling backend
+you use — Step 0's "know the current schedule" and Step 6's "shared
+short-term log" are requirements, not a specific implementation. One
+real-world way to satisfy both at once: an Obsidian vault as the
+agent's long-term memory (e.g.
+[obsidian-mind](https://github.com/breferrari/obsidian-mind) or similar
+vault-as-memory setups), paired with a local semantic search layer over
+that vault (embedding + vector DB, queried before answering, re-indexed
+after writes) so the agent can pull relevant context by meaning instead
+of exact keywords.
+
+That combination happens to give you both requirements almost for
+free: the vault's daily/dated notes double as a natural short-term
+log, and a semantic query over it can answer "what's going on right
+now" without hardcoding a schedule. But it's one example among many —
+a database, a flat file, or your harness's built-in memory works
+equally well as long as it satisfies Steps 0 and 6.
+
 ## Changelog
+
+- **1.5.0** — Expanded Step 0 from "check the current timestamp" to
+  "know the current timestamp and where it sits relative to whatever
+  schedule already exists" (upcoming/overdue scheduled items, whether
+  now falls inside a defined window). Also named a known failure mode
+  directly: time-grounding discipline tends to fade over a long
+  deployment even when the instruction hasn't changed, and that's a
+  signal to make the check structural rather than memory-dependent.
 
 - **1.4.0** — Added Step 6: a shared short-term log (roughly 24–48
   hours of raw cross-gateway/cross-session activity) distinct from the
