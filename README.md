@@ -1,3 +1,9 @@
+<div align="center">
+
+<img src="assets/ghifarion/repo-banner.svg" alt="PROACTIVE JUDGMENT — Give AI agents a better reason to speak, act, and wait." width="100%">
+
+</div>
+
 # Proactive Judgment Skill
 
 A portable skill that teaches an AI agent **when to speak first** — not
@@ -25,6 +31,21 @@ It does not ship a scheduler, a memory store, or a messaging gateway.
 It assumes you already have those (Claude Code + cron, OpenClaw,
 Hermes, or a custom harness all qualify) and gives the agent running on
 top of them a consistent way to reason about initiative.
+
+> **Ghifarion** · Engineering Intelligence. Building Legacy.
+
+## On this page
+
+- [Why this exists](#why-this-exists)
+- [Install](#install)
+- [Repository contents](#whats-in-this-repo)
+- [Design principles](#design-principles)
+- [Reference architecture](#reference-architecture-optional-one-example)
+- [Changelog](#changelog)
+- [Contributing](#contributing)
+- [License](#license)
+
+---
 
 ## Why this exists
 
