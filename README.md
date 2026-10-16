@@ -47,19 +47,6 @@ top of them a consistent way to reason about initiative.
 
 ---
 
-## On this page
-
-- [Why this exists](#why-this-exists)
-- [Install](#install)
-- [Repository contents](#whats-in-this-repo)
-- [Design principles](#design-principles)
-- [Reference architecture](#reference-architecture-optional-one-example)
-- [Changelog](#changelog)
-- [Contributing](#contributing)
-- [License](#license)
-
----
-
 ## Why this exists
 
 Two observations from looking at how "proactive agent" skills are
