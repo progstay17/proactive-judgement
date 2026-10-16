@@ -6,9 +6,46 @@
 
 # Proactive Judgment Skill
 
-A portable judgment layer that helps AI agents decide when to speak, whom to notify, which channel to use, and when to stay silent—without bundling a scheduler or messaging gateway.
+A portable skill that teaches an AI agent **when to speak first** — not
+just how to run on a schedule.
+
+Most "make my agent proactive" setups are really just a cron job with a
+personality: a timer fires, a script pulls some data, formats a
+message, and pushes it to chat. The agent never actually *decided*
+anything. This skill is the missing judgment layer that sits on top of
+whatever scheduling/memory/messaging infrastructure your agent already
+has, and decides:
+
+- Is this actually worth saying, or is it noise?
+- Who should hear it — the user, or someone else entirely?
+- Which channel, and in what tone?
+- Is this reversible enough to act on autonomously, or should it go
+  through the user first?
+- Is it actually the current time and date I think it is — checked,
+  not assumed?
+- Does this need a follow-up at a specific later point, worth
+  scheduling on its own rather than waiting for the next generic
+  wake-up?
+
+It does not ship a scheduler, a memory store, or a messaging gateway.
+It assumes you already have those (Claude Code + cron, OpenClaw,
+Hermes, or a custom harness all qualify) and gives the agent running on
+top of them a consistent way to reason about initiative.
 
 > **Ghifarion** · Engineering Intelligence. Building Legacy.
+
+## On this page
+
+- [Why this exists](#why-this-exists)
+- [Install](#install)
+- [Repository contents](#whats-in-this-repo)
+- [Design principles](#design-principles)
+- [Reference architecture](#reference-architecture-optional-one-example)
+- [Changelog](#changelog)
+- [Contributing](#contributing)
+- [License](#license)
+
+---
 
 ## On this page
 
