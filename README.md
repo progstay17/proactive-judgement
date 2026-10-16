@@ -1,3 +1,9 @@
+<div align="center">
+
+<img src="assets/ghifarion/repo-banner.svg" alt="PROACTIVE JUDGMENT — Give AI agents a better reason to speak, act, and wait." width="100%">
+
+</div>
+
 # Proactive Judgment Skill
 
 A portable skill that teaches an AI agent **when to speak first** — not
